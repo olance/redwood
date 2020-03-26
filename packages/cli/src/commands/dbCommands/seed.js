@@ -1,8 +1,11 @@
 import { getPaths, runCommandTask } from 'src/lib'
+import { expandSchemaUnsupportedEnvVariables } from "../../lib/expand-schema-env";
 
 export const command = 'seed'
 export const desc = 'Seed your database with test data.'
 export const handler = () => {
+  const restoreSchema = expandSchemaUnsupportedEnvVariables()
+
   runCommandTask(
     [
       {
@@ -13,5 +16,5 @@ export const handler = () => {
       },
     ],
     { verbose: true }
-  )
+  ).finally(restoreSchema)
 }

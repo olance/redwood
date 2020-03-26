@@ -1,4 +1,5 @@
 import { runCommandTask } from 'src/lib'
+import {expandSchemaUnsupportedEnvVariables} from "src/lib/expand-schema-env";
 
 export const command = 'down'
 export const desc = 'Migrate your database down.'
@@ -6,6 +7,8 @@ export const builder = {
   verbose: { type: 'boolean', default: true, alias: ['v'] },
 }
 export const handler = async ({ verbose = true }) => {
+  const restoreSchema = expandSchemaUnsupportedEnvVariables()
+
   await runCommandTask(
     [
       {
@@ -17,5 +20,5 @@ export const handler = async ({ verbose = true }) => {
     {
       verbose,
     }
-  )
+  ).finally(restoreSchema)
 }

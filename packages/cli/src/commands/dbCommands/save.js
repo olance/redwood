@@ -1,4 +1,5 @@
 import { runCommandTask } from 'src/lib'
+import { expandSchemaUnsupportedEnvVariables } from "../../lib/expand-schema-env";
 
 export const command = 'save [name..]'
 export const desc = 'Create a new migration.'
@@ -6,6 +7,8 @@ export const builder = {
   verbose: { type: 'boolean', default: true, alias: ['v'] },
 }
 export const handler = async ({ name, verbose = true }) => {
+  const restoreSchema = expandSchemaUnsupportedEnvVariables()
+
   await runCommandTask(
     [
       {
@@ -21,5 +24,5 @@ export const handler = async ({ name, verbose = true }) => {
     {
       verbose,
     }
-  )
+  ).finally(restoreSchema)
 }

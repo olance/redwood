@@ -1,6 +1,7 @@
 import path from 'path'
 
 import { runCommandTask, getPaths } from 'src/lib'
+import { expandSchemaUnsupportedEnvVariables } from "src/lib/expand-schema-env";
 
 export const command = 'generate'
 export const desc = 'Generate the Prisma client.'
@@ -26,6 +27,8 @@ export const handler = async ({ verbose = true, force = true }) => {
     }
   }
 
+  const restoreSchema = expandSchemaUnsupportedEnvVariables()
+
   return await runCommandTask(
     [
       {
@@ -37,5 +40,5 @@ export const handler = async ({ verbose = true, force = true }) => {
     {
       verbose,
     }
-  )
+  ).finally(restoreSchema)
 }
