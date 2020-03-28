@@ -1,15 +1,18 @@
+import fs from 'fs'
 import path from 'path'
 
 import { runCommandTask, getPaths } from 'src/lib'
-import { expandSchemaUnsupportedEnvVariables } from "src/lib/expand-schema-env";
+import { expandSchemaUnsupportedEnvVariables } from 'src/lib/expand-schema-env'
 
 export const command = 'generate'
 export const desc = 'Generate the Prisma client.'
 export const builder = {
   verbose: { type: 'boolean', default: true, alias: ['v'] },
   force: { type: 'boolean', default: true, alias: ['f'] },
+  watch: { type: 'boolean', default: false, alias: ['w'] },
 }
-export const handler = async ({ verbose = true, force = true }) => {
+
+async function generate(verbose = true, force = true) {
   // Do not generate the Prisma client if it exists.
   if (!force) {
     // The Prisma client throws if it is not generated.
@@ -27,18 +30,52 @@ export const handler = async ({ verbose = true, force = true }) => {
     }
   }
 
-  const restoreSchema = expandSchemaUnsupportedEnvVariables()
+  const tmpSchemaFilePath = path.join(
+    getPaths().base,
+    'api/prisma/schema.expanded.prisma'
+  )
+  expandSchemaUnsupportedEnvVariables(tmpSchemaFilePath)
 
   return await runCommandTask(
     [
       {
         title: 'Generating the Prisma client...',
         cmd: 'yarn prisma2',
-        args: ['generate'],
+        args: ['generate', `--schema ${tmpSchemaFilePath}`],
       },
     ],
     {
       verbose,
     }
-  ).finally(restoreSchema)
+  ).finally(() => {
+    fs.unlinkSync(tmpSchemaFilePath)
+  })
+}
+
+export const handler = async ({
+  verbose = true,
+  force = true,
+  watch = false,
+}) => {
+  if (watch) {
+    const schemaPath = path.join(getPaths().base, 'api/prisma/schema.prisma')
+    const watchingText = 'Watching changes to the Prisma schema...'
+
+    fs.watch(schemaPath, async (eventType) => {
+      if (eventType === 'change') {
+        console.info('Schema change detected, rebuilding...')
+
+        await generate(verbose, true)
+
+        console.info(watchingText)
+      }
+    })
+
+    await generate(verbose, true)
+
+    console.info(watchingText)
+    await new Promise(() => null)
+  } else {
+    return generate(verbose, force)
+  }
 }

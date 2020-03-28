@@ -1,7 +1,11 @@
 import fs from 'fs'
+import path from 'path'
 
-export const expandSchemaUnsupportedEnvVariables = (schemaPath) => {
+import { getPaths } from 'src/lib'
+
+export const expandSchemaUnsupportedEnvVariables = (expandedSchemaPath = null) => {
   // Get Prisma's schema file content
+  const schemaPath = path.join(getPaths().base, 'api/prisma/schema.prisma')
   const schemaOriginalContents = fs.readFileSync(schemaPath, 'utf-8')
   let expandedSchema = schemaOriginalContents
 
@@ -22,9 +26,10 @@ export const expandSchemaUnsupportedEnvVariables = (schemaPath) => {
   }
 
   // Write newly expanded content to the schema file
-  fs.writeFileSync(schemaPath, expandedSchema)
+  expandedSchemaPath = expandedSchemaPath ? expandedSchemaPath : schemaPath
+  fs.writeFileSync(expandedSchemaPath, expandedSchema)
 
   return () => {
-    fs.writeFileSync(schemaPath, schemaOriginalContents)
+    fs.writeFileSync(expandedSchemaPath, schemaOriginalContents)
   }
 }
